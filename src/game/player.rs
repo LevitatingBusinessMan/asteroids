@@ -5,7 +5,10 @@ use graphics::{Mesh, MeshBuilder, DrawParam};
 use crate::game;
 use game::movement::Movement;
 
-/// The player, and
+/// The player
+/// Width and Height is sort of switched here
+/// This is because the mesh is made to face the right but then rotated upwards
+/// I thought it would make more sense like this but it kind of didn't but whateer who cares
 pub struct Player {
     pub width: f32,
     pub height: f32,
@@ -15,7 +18,8 @@ pub struct Player {
     pub movement_force: f32,
     pub rotation_speed: f32,
     pub mov: Movement,
-    pub fire_rate: f32
+    pub fire_rate: f32,
+    pub moving: bool
 }
 
 impl Player {
@@ -29,17 +33,20 @@ impl Player {
         self.mov.force_x = 0.0;
         self.mov.force_y = 0.0;
 
+        self.moving = false;
+
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::A) {
-            self.rotation -= self.rotation_speed
+            self.rotation -= self.rotation_speed;
         }
 
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::D) {
-            self.rotation += self.rotation_speed
+            self.rotation += self.rotation_speed;
         }
         
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::W) {
             self.mov.force_x += self.rotation.cos() * self.movement_force;
             self.mov.force_y += self.rotation.sin() * self.movement_force;
+            self.moving = true;
         }
 
         // Movement structs handles the physics
@@ -73,8 +80,9 @@ impl Player {
 
 impl game::Draw for Player {
     fn mesh(&self, ctx: &mut Context) -> GameResult<Mesh> {
-        MeshBuilder::new()
-        .line(
+        let mut mesh = MeshBuilder::new();
+        
+        mesh.line(
             &[
                 [0.0, 0.0],
                 [self.height, -self.width / 2.0],
@@ -83,8 +91,26 @@ impl game::Draw for Player {
             ],
             1.3,
             graphics::WHITE
-        )?
-        .build(ctx)
+        )?;
+
+        // Draw fire behind rocket
+        if self.moving {
+            mesh.line(
+                &[
+                    [ - 0.0, - 0.1 * self.width],
+                    [ - 0.3 * self.height, - 0.233 * self.width],
+                    [ - 0.2 * self.height, - 0.366 * self.width],
+                    [ - 0.6 * self.height, - 0.5 * self.width],
+                    [ - 0.2 * self.height, - 0.633 * self.width],
+                    [ - 0.3 * self.height, - 0.766 * self.width],
+                    [ - 0.0 * self.height, - 0.9 * self.width]
+                ],
+                1.3,
+                graphics::WHITE
+            )?;
+        }
+
+        mesh.build(ctx)
     }
 
     fn draw_param(&self) -> DrawParam {

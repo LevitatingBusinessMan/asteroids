@@ -14,7 +14,7 @@ use player::Player;
 
 pub struct GameState {
     pub player: Player/* ,
-    lasers: Vec<Laser> */
+    lasers: Vec<Laser>*/
 }
 
 /// All structs with this trait can draw themselves
@@ -47,7 +47,8 @@ impl GameState {
                 movement_force: 5.0,
                 rotation_speed: 0.08,
                 mov: Movement::new(0.3, 10.0),
-                fire_rate: 0.3
+                fire_rate: 0.3,
+                moving: false
             }
         }
 
