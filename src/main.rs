@@ -65,6 +65,38 @@ struct Player {
     mov: Movement
 }
 
+impl Player {
+
+    /* Handle keyboard inputs and update the location of the Player accordingly */
+    fn update_movement(&mut self, ctx: &Context) {
+
+        /* The current implementation does not allow external forces
+        This could be easily achieved by having this call take additional params which set
+        some force before movement calculation like gravity. This is (currently) not needed for this game.*/
+        self.mov.force_x = 0.0;
+        self.mov.force_y = 0.0;
+
+        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::A) {
+            self.rotation -= self.rotation_speed
+        }
+
+        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::D) {
+            self.rotation += self.rotation_speed
+        }
+        
+        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::W) {
+            self.mov.force_x += self.rotation.cos() * self.movement_force;
+            self.mov.force_y += self.rotation.sin() * self.movement_force;
+        }
+
+        // Movement structs handles the physics
+        self.mov.update();
+
+        self.x += self.mov.speed_x;
+        self.y += self.mov.speed_y;
+    }
+}
+
 struct GameState {
     player: Player
 }
@@ -98,28 +130,7 @@ impl ggez::event::EventHandler for GameState {
     /* I should soon start to specify an update interval so physics match up */
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         
-        self.player.mov.force_x = 0.0;
-        self.player.mov.force_y = 0.0;
-
-
-        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::A) {
-            self.player.rotation -= self.player.rotation_speed
-        }
-
-        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::D) {
-            self.player.rotation += self.player.rotation_speed
-        }
-        
-        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::W) {
-            self.player.mov.force_x += self.player.rotation.cos() * self.player.movement_force;
-            self.player.mov.force_y += self.player.rotation.sin() * self.player.movement_force;
-        }
-
-        // Movement structs handles the physics
-        self.player.mov.update();
-
-        self.player.x += self.player.mov.speed_x;
-        self.player.y += self.player.mov.speed_y;
+        self.player.update_movement(ctx);
 
         let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
 
