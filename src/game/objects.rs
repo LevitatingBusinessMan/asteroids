@@ -4,12 +4,14 @@ use graphics::{Mesh, MeshBuilder, DrawParam};
 
 use crate::game;
 use game::movement::Movement;
+use game::Draw;
 
-/// The player.
+//#region Ship
+/// The Ship.
 /// Width and Height is sort of switched here.
 /// This is because the mesh is made to face the right but then rotated upwards.
 /// I thought it would make more sense like this but it kind of didn't but whateer who cares.
-pub struct Player {
+pub struct Ship {
     pub width: f32,
     pub height: f32,
     pub x: f32,
@@ -23,20 +25,20 @@ pub struct Player {
     pub moving: bool
 }
 
-impl Player {
+impl Ship {
 
-    pub fn new(ctx: &Context) -> Player {
+    pub fn new(ctx: &Context) -> Ship {
         
         let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
 
-        let player_width = 18.0;
-        let player_height = 20.0;
+        let ship_width = 18.0;
+        let ship_height = 20.0;
 
-        Player {
-            width: player_width,
-            height: player_height,
-            x: (ctx_width - player_width)/ 2.0,
-            y: (ctx_height- player_height) / 2.0,
+        Ship {
+            width: ship_width,
+            height: ship_height,
+            x: (ctx_width - ship_width)/ 2.0,
+            y: (ctx_height- ship_height) / 2.0,
             rotation: (3.0 / 2.0) * std::f32::consts::PI, // Start facing up
             movement_force: 5.0,
             rotation_speed: 0.08, /// Speed of rotation in radials per tick
@@ -47,7 +49,7 @@ impl Player {
         }
     }
 
-    /// Handle keyboard inputs and update the location of the Player accordingly
+    /// Handle keyboard inputs and update the location of the Ship accordingly
     pub fn update_movement(&mut self, ctx: &Context) {
 
         /* The current implementation does not allow external forces
@@ -80,7 +82,7 @@ impl Player {
     }
 
 
-    /// Add a laser to the gamestate appearing from the player
+    /// Add a laser to the gamestate appearing from the ship
     pub fn shoot(&self, lasers:  &mut Vec<game::Laser>) {
         lasers.push(game::Laser::new(
             self.x + self.height /2.0,
@@ -111,7 +113,7 @@ impl Player {
 
 }
 
-impl game::Draw for Player {
+impl game::Draw for Ship {
     fn mesh(&self, ctx: &mut Context) -> GameResult<Mesh> {
         let mut mesh = MeshBuilder::new();
         
@@ -161,3 +163,62 @@ impl game::Draw for Player {
     }
 
 }
+//#endregion
+
+//#region Laser
+pub struct Laser {
+    pub x: f32,
+    pub y: f32,
+    pub rotation: f32,
+    speed: f32,
+    width: f32
+}
+
+impl Laser {
+    pub fn new(x: f32, y: f32, rotation: f32) -> Laser {
+        Laser {
+            x,
+            y,
+            rotation,
+            speed: 17.0,
+            width: 15.0
+        }
+    }
+    
+    pub fn update(&mut self) {
+        self.x += self.rotation.cos() * self.speed;
+        self.y += self.rotation.sin() * self.speed;
+    }
+
+}
+
+impl Draw for Laser {
+
+    fn mesh(&self, ctx: &mut Context) -> ggez::GameResult<graphics::Mesh> {
+        MeshBuilder::new()
+        .line(
+            &[
+                [0.0,0.0],
+                [15.0,0.0]
+            ],
+            2.0,
+            graphics::WHITE
+        )?
+        .build(ctx)
+    }
+
+    fn draw_param(&self) -> DrawParam {
+        DrawParam::new()
+            .dest([self.x, self.y])
+            .offset([0.5 * self.width, 0.0])
+            .rotation(self.rotation)
+    }
+    
+    fn draw(&self, ctx: &mut Context) -> ggez::GameResult {
+        let mesh = self.mesh(ctx)?;
+        let param = self.draw_param();
+        graphics::draw(ctx, &mesh, param)
+    }
+
+}
+//#endregion

@@ -30,15 +30,15 @@ impl ggez::event::EventHandler for game::GameState {
         
         let now = Instant::now();
 
-        self.player.update_movement(ctx);
+        self.ship.update_movement(ctx);
 
-        // Wrap the player around the screen
-        game::screen_wrap((&mut self.player.x, &mut self.player.y), &ctx);
+        // Wrap the ship around the screen
+        game::screen_wrap((&mut self.ship.x, &mut self.ship.y), &ctx);
 
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::Space)
-        && self.player.last_fire.elapsed() > Duration::from_secs_f32(1.0 / self.player.fire_rate) {
-            self.player.shoot(&mut self.lasers);
-            self.player.last_fire = Instant::now();
+        && self.ship.last_fire.elapsed() > Duration::from_secs_f32(1.0 / self.ship.fire_rate) {
+            self.ship.shoot(&mut self.lasers);
+            self.ship.last_fire = Instant::now();
         }
 
         Ok(())
@@ -57,10 +57,10 @@ impl ggez::event::EventHandler for game::GameState {
             laser.draw(ctx)?;
         }
        
-        self.player.draw(ctx)?;
+        self.ship.draw(ctx)?;
 
         // Debug stuff
-        let player_stats = self.player.debug_string();
+        let ship_stats = self.ship.debug_string();
         let debug_string = format!(
             "Fps ({})\n\
             Lasers ({})\n\
@@ -68,7 +68,7 @@ impl ggez::event::EventHandler for game::GameState {
 
             ggez::timer::fps(ctx),
             self.lasers.len(),
-            player_stats
+            ship_stats
         );
         graphics::draw(ctx, &(graphics::Text::new(debug_string)), graphics::DrawParam::default())?;
 
