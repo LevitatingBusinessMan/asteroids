@@ -1,5 +1,6 @@
 use ggez::{graphics, Context, GameResult};
 use ggez::input::keyboard;
+use ggez::nalgebra::{Point2};
 
 fn main() {
     
@@ -24,16 +25,31 @@ struct Movement {
     force_x: f32,
     force_y: f32,
     accellartion_x: f32,
-    accellartion_y: f32 
+    accellartion_y: f32
 }
 
 impl Movement {
+    pub fn new(drag: f32, mass: f32) -> Movement {
+        Movement {
+            drag: drag,
+            mass: mass,
+            speed_x: 0.0,
+            speed_y: 0.0,
+            force_x: 0.0,
+            force_y: 0.0,
+            accellartion_x: 0.0,
+            accellartion_y: 0.0
+        }
+    }
+
     pub fn update(&mut self) {
+        // Movement
         self.accellartion_x = (self.force_x - self.drag * self.speed_x) / self.mass;
         self.accellartion_y = (self.force_y - self.drag * self.speed_y) / self.mass;
 
         self.speed_x +=  self.accellartion_x;
         self.speed_y +=  self.accellartion_y;
+
     }
 }
 
@@ -42,7 +58,9 @@ struct Player {
     height: f32,
     x: f32,
     y: f32,
-    walk_force: f32,
+    rotation: f32,
+    movement_force: f32,
+    rotation_speed: f32,
     mov: Movement
 }
 
@@ -61,19 +79,12 @@ impl GameState {
             player: Player {
                 width: player_width,
                 height: player_height,
-                x: ctx_width / 2.0 - player_width,
-                y: ctx_height / 2.0 - player_height,
-                walk_force: 5.0,
-                mov: Movement {
-                    drag: 0.5,
-                    mass: 10.0,
-                    speed_x: 0.0,
-                    speed_y: 0.0,
-                    force_x: 0.0,
-                    force_y: 0.0,
-                    accellartion_x: 0.0,
-                    accellartion_y: 0.0 
-                }
+                x: (ctx_width - player_width)/ 2.0,
+                y: (ctx_height- player_height) / 2.0,
+                rotation: (3.0 / 2.0) * std::f32::consts::PI,
+                movement_force: 5.0,
+                rotation_speed: 0.08,
+                mov: Movement::new(0.3, 10.0)
             }
         }
 
@@ -86,21 +97,20 @@ impl ggez::event::EventHandler for GameState {
         self.player.mov.force_x = 0.0;
         self.player.mov.force_y = 0.0;
 
-        // Set forces by player from walking
+
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::A) {
-            self.player.mov.force_x -= self.player.walk_force
+            self.player.rotation -= self.player.rotation_speed
         }
 
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::D) {
-            self.player.mov.force_x += self.player.walk_force
-        }
-
-        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::W) {
-            self.player.mov.force_y -= self.player.walk_force
+            self.player.rotation += self.player.rotation_speed
         }
         
-        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::S) {
-            self.player.mov.force_y += self.player.walk_force
+        if keyboard::is_key_pressed(ctx, keyboard::KeyCode::W) {
+            println!("cos: {}", self.player.rotation.cos());
+            println!("sin: {}", self.player.rotation.sin());
+            self.player.mov.force_x += self.player.rotation.cos() * self.player.movement_force;
+            self.player.mov.force_y += self.player.rotation.sin() * self.player.movement_force;
         }
 
         // Movement structs handles the physics
@@ -119,9 +129,9 @@ impl ggez::event::EventHandler for GameState {
             self.player.x = self.player.x + ctx_width;
         }
 
-        if self.player.y > ctx_width {
+        if self.player.y > ctx_height {
             self.player.y = self.player.y - ctx_height;
-        } else if self.player.x < 0.0 {
+        } else if self.player.y < 0.0 {
             self.player.y = self.player.y + ctx_height;
         }
 
@@ -134,11 +144,20 @@ impl ggez::event::EventHandler for GameState {
         let player_mesh = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
-            graphics::Rect::new(self.player.x, self.player.y, self.player.width, self.player.height),
+            graphics::Rect::new(0.0, 0.0, self.player.width, self.player.height),
             graphics::WHITE,
         )?;
 
-        graphics::draw(ctx, &player_mesh, graphics::DrawParam::default())?;
+        graphics::draw(
+            ctx,
+            &player_mesh,
+            graphics::DrawParam::new()
+                .dest([self.player.x, self.player.y])
+                .offset([0.5 * self.player.width, 0.5 * self.player.height])
+                .rotation(self.player.rotation)
+        )?;
+
+        //self.player.rotation
 
         let player_stats = format!( 
             "Force x:           {}\n\
@@ -146,14 +165,16 @@ impl ggez::event::EventHandler for GameState {
              Acceleration x:    {}\n\
              Acceleration y:    {}\n\
              Speed x:           {}\n\
-             Speed y:           {}\n",
+             Speed y:           {}\n\
+             Rotation speed:    {}\n",
             
             self.player.mov.force_x,
             self.player.mov.force_y,
             self.player.mov.accellartion_x,
             self.player.mov.accellartion_y,
             self.player.mov.speed_x,
-            self.player.mov.speed_y
+            self.player.mov.speed_y,
+            self.player.rotation_speed
         );
 
         graphics::draw(ctx, &(graphics::Text::new(player_stats)), graphics::DrawParam::default())?;
