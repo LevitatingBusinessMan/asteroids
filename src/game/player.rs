@@ -5,10 +5,10 @@ use graphics::{Mesh, MeshBuilder, DrawParam};
 use crate::game;
 use game::movement::Movement;
 
-/// The player
-/// Width and Height is sort of switched here
-/// This is because the mesh is made to face the right but then rotated upwards
-/// I thought it would make more sense like this but it kind of didn't but whateer who cares
+/// The player.
+/// Width and Height is sort of switched here.
+/// This is because the mesh is made to face the right but then rotated upwards.
+/// I thought it would make more sense like this but it kind of didn't but whateer who cares.
 pub struct Player {
     pub width: f32,
     pub height: f32,
@@ -19,10 +19,33 @@ pub struct Player {
     pub rotation_speed: f32,
     pub mov: Movement,
     pub fire_rate: f32,
+    pub last_fire: std::time::Instant,
     pub moving: bool
 }
 
 impl Player {
+
+    pub fn new(ctx: &Context) -> Player {
+        
+        let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
+
+        let player_width = 18.0;
+        let player_height = 20.0;
+
+        Player {
+            width: player_width,
+            height: player_height,
+            x: (ctx_width - player_width)/ 2.0,
+            y: (ctx_height- player_height) / 2.0,
+            rotation: (3.0 / 2.0) * std::f32::consts::PI, // Start facing up
+            movement_force: 5.0,
+            rotation_speed: 0.08, /// Speed of rotation in radials per tick
+            mov: Movement::new(0.3, 10.0),
+            fire_rate: 5.0, /// How many time the ship can fire a laser per second
+            last_fire: std::time::Instant::now(), /// Time the ship fired for the last time
+            moving: false
+        }
+    }
 
     /// Handle keyboard inputs and update the location of the Player accordingly
     pub fn update_movement(&mut self, ctx: &Context) {
@@ -56,6 +79,16 @@ impl Player {
         self.y += self.mov.speed_y;
     }
 
+
+    /// Add a laser to the gamestate appearing from the player
+    pub fn shoot(&self, lasers:  &mut Vec<game::Laser>) {
+        lasers.push(game::Laser::new(
+            self.x + self.height /2.0,
+            self.y - self.width / 2.0,
+            self.rotation)
+        );
+    }
+
     pub fn debug_string(&self) -> String {
         format!(
             "Force x:           {}\n\
@@ -82,6 +115,7 @@ impl game::Draw for Player {
     fn mesh(&self, ctx: &mut Context) -> GameResult<Mesh> {
         let mut mesh = MeshBuilder::new();
         
+        // Could be a polygon as well
         mesh.line(
             &[
                 [0.0, 0.0],
