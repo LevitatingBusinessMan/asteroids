@@ -5,15 +5,21 @@ use std::vec::Vec;
 mod movement;
 
 mod objects;
-use objects::{Ship, Laser};
+use objects::{Ship, Laser, Asteroid};
+
+/* In the future I should make general things like
+GameObject (Struct)
+and GameObjectCollection (Vec)
+sharing specifc traits and enum options etc 
+Like an enum if they should wrap or destruct */
 
 pub struct GameState {
     pub ship: Ship,
-    pub lasers: Vec<Laser>
+    pub lasers: Vec<Laser>,
+    pub asteroids: Vec<Asteroid>
 }
 
 /// All structs with this trait can draw themselves.
-/// The mesh can be retrieved from a variable if it's constant.
 pub trait Draw {
     /// Draw a mesh for this object
     fn mesh(&self, ctx: &mut Context) -> ggez::GameResult<graphics::Mesh>;
@@ -30,10 +36,18 @@ impl GameState {
 
         GameState {
             ship: Ship::new(ctx),
-            lasers: Vec::new()
+            lasers: Vec::new(),
+            asteroids: Vec::new()
         }
 
     }
+
+    pub fn spawn_asteroids(& mut self, ctx: &mut Context, amount: u32) {
+        for _ in 0..amount {
+            self.asteroids.push(Asteroid::new(self.ship.x, self.ship.y, ctx))
+        }
+    }
+
 }
 
 /// Will screenwrap anything
@@ -68,5 +82,15 @@ pub fn outside_window((x, y): (f32, f32), ctx: &Context) -> bool {
     } {
         return false
     }
+
+}
+
+pub fn random_place(ctx: &Context) -> (f32, f32){
+    let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
+
+    let x = rand::random::<f32>() * ctx_width;
+    let y = rand::random::<f32>() * ctx_height;
+
+    (x, y)
 
 }

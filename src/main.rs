@@ -16,11 +16,13 @@ fn main() {
     .unwrap();
 
     let mut game_state = game::GameState::new(&ctx);
+    game_state.spawn_asteroids(&mut ctx, 20);
 
     match ggez::event::run(&mut ctx, &mut event_loop, &mut game_state) {
         Ok(_)       => println!("Exited cleanly"),
         Err(err)    => println!("Error occured: {}", err)
     }
+
 }
 
 impl ggez::event::EventHandler for game::GameState {
@@ -28,12 +30,16 @@ impl ggez::event::EventHandler for game::GameState {
     /* I should soon start to specify an update interval so physics match up */
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         
-        let now = Instant::now();
-
         self.ship.update_movement(ctx);
 
         // Wrap the ship around the screen
         game::screen_wrap((&mut self.ship.x, &mut self.ship.y), &ctx);
+
+        // Wrap asteroids around the screen
+        for asteroid in &mut self.asteroids {
+            game::screen_wrap((&mut asteroid.x, &mut asteroid.y), &ctx);
+        }
+
 
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::Space)
         && self.ship.last_fire.elapsed() > Duration::from_secs_f32(1.0 / self.ship.fire_rate) {
@@ -51,10 +57,15 @@ impl ggez::event::EventHandler for game::GameState {
         let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
         
         self.lasers.retain(|laser| !game::outside_window((laser.x, laser.y), ctx));
-        
+
         for laser in &mut self.lasers {
             laser.update();
             laser.draw(ctx)?;
+        }
+
+        for asteroid in &mut self.asteroids {
+            asteroid.update();
+            asteroid.draw(ctx)?;
         }
        
         self.ship.draw(ctx)?;
@@ -64,10 +75,12 @@ impl ggez::event::EventHandler for game::GameState {
         let debug_string = format!(
             "Fps ({})\n\
             Lasers ({})\n\
+            Asteroids ({})\n\
             {}",
 
             ggez::timer::fps(ctx),
             self.lasers.len(),
+            self.asteroids.len(),
             ship_stats
         );
         graphics::draw(ctx, &(graphics::Text::new(debug_string)), graphics::DrawParam::default())?;
