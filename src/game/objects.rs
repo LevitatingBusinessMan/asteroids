@@ -169,12 +169,6 @@ impl game::Draw for Ship {
             .rotation(self.rotation)
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        let mesh = self.mesh(ctx)?;
-        let param = self.draw_param();
-        graphics::draw(ctx, &mesh, param)
-    }
-
 }
 //#endregion
 
@@ -226,12 +220,6 @@ impl Draw for Laser {
             .offset([0.5 * self.width, 0.0])
             .rotation(self.rotation)
     }
-    
-    fn draw(&self, ctx: &mut Context) -> ggez::GameResult {
-        let mesh = self.mesh(ctx)?;
-        let param = self.draw_param();
-        graphics::draw(ctx, &mesh, param)
-    }
 
 }
 //#endregion
@@ -239,14 +227,18 @@ impl Draw for Laser {
 //#region Asteroid
 
 /// The 3 different asteroid sizes
+#[derive(Debug)]
 enum AsteroidSize {
     Big,
     Medium,
     Small
 }
 
+/// Factor to multiple mesh with
 const ASTEROID_BIG: f32 = 40.0;
+/// Factor to multiple mesh with
 const ASTEROID_MEDIUM: f32 = 30.0;
+/// Factor to multiple mesh with
 const ASTEROID_SMALL: f32  = 20.0;
 
 pub struct Asteroid {
@@ -256,27 +248,39 @@ pub struct Asteroid {
     rotation_speed: f32,
     speed: f32,
     size: AsteroidSize,
+    mirrored: bool,
 
     /// Index for the asteroid_mashes var
     mesh: usize
+
 }
 
-const ASTEROID_MAX_MOVEMENT_SPEED: f32 = 5.0;
-const ASTEROID_MAX_ROTATION_SPEED: f32 = 0.3;
+const ASTEROID_MAX_MOVEMENT_SPEED: f32 = 0.0;
+const ASTEROID_MAX_ROTATION_SPEED: f32 = 0.0;
 
 /// The width/height of the safezone of the ship.\
 /// Asteroids do not spawn here
-const SHIP_SAFEZONE: f32 = 100.0;
+const SHIP_SAFEZONE: f32 = 300.0;
 
-static asteroid_meshes: [[[f32;2];5];1] = [
-    [
-        [0.0, 0.0],
-        [20.0, 0.0],
-        [20.0, 20.0],
-        [0.0, 20.0],
-        [0.0, 0.0]
+/// Array of different random meshes for the asteroids
+const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
+    |size| [
+        [0.0 *size, 0.0 *size],
+        [1.0 *size, 0.0 *size],
+        [2.5 *size, 1.0 *size],
+        [2.5 *size, 1.3 *size],
+        [1.5 *size, 1.7 *size],
+        [2.4 *size, 1.9 *size],
+        [1.5 *size, 2.8 *size],
+        [0.9 *size, 2.6 *size],
+        [0.4 *size, 2.4 *size],
+        [-0.3*size, 1.2 *size],
+        [-0.1*size, 0.8 *size],
+        [0.3 *size, 1.0 *size],
+        [0.0 *size, 0.0 *size]
     ]
 ];
+
 
 impl Asteroid {
     pub fn new(ship_x: f32, ship_y: f32, ctx: &mut Context) -> Asteroid {
@@ -301,18 +305,24 @@ impl Asteroid {
 
         let size;
 
-        match ((rand::random::<f32>()+1.0) * 3.0).floor() as u16 {
+        match (rand::random::<f32>() * 3.0 + 1.0).floor() as u8 {
             1 => size = AsteroidSize::Small,
             2 => size = AsteroidSize::Medium,
             3 => size = AsteroidSize::Big,
             _ => size = AsteroidSize::Small
         }
 
+        let mirrored = match rand::random::<f32>().round() as u8 {
+            1 => false,
+            2 => true,
+            _ => true
+        };
+
         let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
         let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
         let rotation = rand::random::<f32>() * (2.0 * std::f32::consts::PI);
 
-        let mesh = (rand::random::<f32>() * asteroid_meshes.len() as f32).floor() as usize;
+        let mesh = (rand::random::<f32>() * ASTEROID_MESHES.len() as f32).floor() as usize;
 
         // Asteroid go brrr
         Asteroid {
@@ -322,6 +332,7 @@ impl Asteroid {
             speed,
             rotation_speed,
             rotation,
+            mirrored,
             mesh
         }
     }
@@ -337,34 +348,47 @@ impl Asteroid {
 }
 
 impl Draw for Asteroid {
+    
     fn mesh(&self, ctx: &mut Context) -> GameResult<Mesh> {
+
+        let size;
+        match &self.size {
+            AsteroidSize::Big => size = ASTEROID_BIG,
+            AsteroidSize::Medium => size = ASTEROID_MEDIUM,
+            AsteroidSize::Small => size = ASTEROID_SMALL
+        }
+
         Mesh
         ::new_line(
             ctx,
-            &asteroid_meshes[self.mesh],
-            2.0,
+            &ASTEROID_MESHES[self.mesh](size),
+            1.0,
             graphics::WHITE
         )
     }
 
     fn draw_param(&self) -> DrawParam {
+
         let size;
         match &self.size {
-            Big => size = ASTEROID_BIG,
-            Medium => size = ASTEROID_MEDIUM,
-            Small => size = ASTEROID_SMALL
+            AsteroidSize::Big => size = ASTEROID_BIG,
+            AsteroidSize::Medium => size = ASTEROID_MEDIUM,
+            AsteroidSize::Small => size = ASTEROID_SMALL
         }
-        DrawParam::new()
+
+        let mut param = DrawParam::new()
             .dest([self.x, self.y])
             .offset([0.5 * size, 0.5 * -size])
-            .rotation(self.rotation)
+            .rotation(self.rotation);
+        
+        if self.mirrored {
+            param = param.scale([-1.0, 1.0]);
+        }
+        
+        param
+
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        let mesh = self.mesh(ctx)?;
-        let param = self.draw_param();
-        graphics::draw(ctx, &mesh, param)
-    }
 }
 
 //#endregion Asteroid

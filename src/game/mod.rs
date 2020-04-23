@@ -28,7 +28,11 @@ pub trait Draw {
     fn draw_param(&self) -> graphics::DrawParam;
     
     /// Draw this object
-    fn draw(&self, ctx: &mut Context) -> ggez::GameResult;
+    fn draw(&self, ctx: &mut Context) -> ggez::GameResult {
+        let mesh = self.mesh(ctx)?;
+        let param = self.draw_param();
+        graphics::draw(ctx, &mesh, param)
+    }
 }
 
 impl GameState {

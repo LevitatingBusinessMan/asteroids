@@ -16,7 +16,7 @@ fn main() {
     .unwrap();
 
     let mut game_state = game::GameState::new(&ctx);
-    game_state.spawn_asteroids(&mut ctx, 20);
+    game_state.spawn_asteroids(&mut ctx, 10);
 
     match ggez::event::run(&mut ctx, &mut event_loop, &mut game_state) {
         Ok(_)       => println!("Exited cleanly"),
@@ -88,4 +88,7 @@ impl ggez::event::EventHandler for game::GameState {
 
         graphics::present(ctx)
     }
+
+    // TODO: add keydown functions instead
+
 }
