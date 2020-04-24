@@ -35,6 +35,7 @@ pub trait Draw {
     }
 }
 
+/// Current state of the game1
 impl GameState {
     pub fn new(ctx: &Context) -> GameState {
 
@@ -50,6 +51,10 @@ impl GameState {
         for _ in 0..amount {
             self.asteroids.push(Asteroid::new(self.ship.x, self.ship.y, ctx))
         }
+    }
+
+    pub fn death(&mut self) {
+        //println!("DEAD");
     }
 
 }
@@ -89,6 +94,7 @@ pub fn outside_window((x, y): (f32, f32), ctx: &Context) -> bool {
 
 }
 
+/// Returns random location on the canvas
 pub fn random_place(ctx: &Context) -> (f32, f32){
     let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
 

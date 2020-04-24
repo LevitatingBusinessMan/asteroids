@@ -16,7 +16,7 @@ fn main() {
     .unwrap();
 
     let mut game_state = game::GameState::new(&ctx);
-    game_state.spawn_asteroids(&mut ctx, 10);
+    game_state.spawn_asteroids(&mut ctx, 1);
 
     match ggez::event::run(&mut ctx, &mut event_loop, &mut game_state) {
         Ok(_)       => println!("Exited cleanly"),
@@ -35,9 +35,15 @@ impl ggez::event::EventHandler for game::GameState {
         // Wrap the ship around the screen
         game::screen_wrap((&mut self.ship.x, &mut self.ship.y), &ctx);
 
-        // Wrap asteroids around the screen
         for asteroid in &mut self.asteroids {
+            // Wrap asteroids around the screen
             game::screen_wrap((&mut asteroid.x, &mut asteroid.y), &ctx);
+
+            if asteroid.in_hitbox((self.ship.x, self.ship.y)) {
+                self.death();
+                break;
+            } 
+
         }
 
 

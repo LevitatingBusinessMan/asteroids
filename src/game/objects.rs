@@ -1,7 +1,6 @@
 use ggez::input::keyboard;
 use ggez::{graphics, Context, GameResult};
 use graphics::{Mesh, MeshBuilder, DrawParam};
-use ggez::nalgebra::Point2;
 
 use crate::game;
 use game::movement::Movement;
@@ -130,6 +129,18 @@ impl game::Draw for Ship {
     fn mesh(&self, ctx: &mut Context) -> GameResult<Mesh> {
         let mut mesh = MeshBuilder::new();
         
+        /*
+            With these points you could make the center of the mesh be the actual center of the triangle
+            This would make writing hit detection easier, and would make the offset trivial.
+            But I did not immediately implement it like this
+            and I don't want to redo the rocket fire mesh right now, so I am leaving this comment instead
+
+                [-self.height/2.0, -self.width/2.0],
+                [ self.height/2.0,             0.0],
+                [-self.height/2.0,  self.width/2.0],
+                [-self.height/2.0, -self.width/2.0]
+        */
+
         // Could be a polygon as well
         mesh.line(
             &[
@@ -173,6 +184,8 @@ impl game::Draw for Ship {
 //#endregion
 
 //#region Laser
+
+/// Laser that has been fired from Ship
 pub struct Laser {
     pub x: f32,
     pub y: f32,
@@ -312,15 +325,18 @@ impl Asteroid {
             _ => size = AsteroidSize::Small
         }
 
-        let mirrored = match rand::random::<f32>().round() as u8 {
+/*         let mirrored = match rand::random::<f32>().round() as u8 {
             1 => false,
             2 => true,
             _ => true
-        };
+        }; */
 
         let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
         let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
-        let rotation = rand::random::<f32>() * (2.0 * std::f32::consts::PI);
+        //let rotation = rand::random::<f32>() * (2.0 * std::f32::consts::PI);
+
+        let rotation = 0.0;
+        let mirrored = false;
 
         let mesh = (rand::random::<f32>() * ASTEROID_MESHES.len() as f32).floor() as usize;
 
@@ -345,6 +361,29 @@ impl Asteroid {
 
     }
 
+    /// Returns a boolean that states if someone is within the hitbox of this asteroid
+    pub fn in_hitbox(&self, (x, y): (f32, f32)) -> bool {
+        
+        let size;
+        match &self.size {
+            AsteroidSize::Big => size = ASTEROID_BIG,
+            AsteroidSize::Medium => size = ASTEROID_MEDIUM,
+            AsteroidSize::Small => size = ASTEROID_SMALL
+        }
+
+        // I am going to take 2.6 as the raw diameter of an asteroid
+        let radius = 2.6 * size / 2.0;
+
+        println!("HIHI");
+        println!("{}", radius);
+        println!("{} {}", x, y);
+        println!("{} {}", self.x, self.y);
+        println!("{}", ((self.x - x).powf(2.0) + (self.y - y).powf(2.0)).sqrt() );
+
+        ((self.x - x).powf(2.0) + (self.y - y).powf(2.0)).sqrt() < radius
+
+    }
+
 }
 
 impl Draw for Asteroid {
@@ -358,13 +397,27 @@ impl Draw for Asteroid {
             AsteroidSize::Small => size = ASTEROID_SMALL
         }
 
-        Mesh
-        ::new_line(
-            ctx,
+        let mut mesh = MeshBuilder::new();
+        
+        mesh.line(
             &ASTEROID_MESHES[self.mesh](size),
             1.0,
             graphics::WHITE
-        )
+        )?;
+
+        // I am going to take 2.6 as the raw diameter of an asteroid
+        let radius = 2.6 * size / 2.0;
+        //DEBUG
+        mesh.circle(
+            graphics::DrawMode::stroke(1.0),
+            [radius, radius],
+            radius,
+            0.2,
+            graphics::WHITE
+        );
+
+        mesh.build(ctx)
+
     }
 
     fn draw_param(&self) -> DrawParam {
