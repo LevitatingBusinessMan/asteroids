@@ -49,12 +49,12 @@ impl GameState {
 
     pub fn spawn_asteroids(& mut self, ctx: &mut Context, amount: u32) {
         for _ in 0..amount {
-            self.asteroids.push(Asteroid::new(self.ship.x, self.ship.y, ctx))
+            self.asteroids.push(Asteroid::new(self.ship.x, self.ship.y, None, ctx))
         }
     }
 
     pub fn death(&mut self) {
-        //println!("DEAD");
+        println!("DEAD");
     }
 
 }

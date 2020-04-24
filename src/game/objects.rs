@@ -240,8 +240,8 @@ impl Draw for Laser {
 //#region Asteroid
 
 /// The 3 different asteroid sizes
-#[derive(Debug)]
-enum AsteroidSize {
+#[derive(Copy, Clone)]
+pub enum AsteroidSize {
     Big,
     Medium,
     Small
@@ -275,8 +275,9 @@ const ASTEROID_MAX_ROTATION_SPEED: f32 = 0.0;
 /// Asteroids do not spawn here
 const SHIP_SAFEZONE: f32 = 300.0;
 
-/// Array of different random meshes for the asteroids
-const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
+/// Array of different random meshes for the asteroids.\
+/// The diameter before mulitplication with the asteroid size should be about 2.0
+/* const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
     |size| [
         [0.0 *size, 0.0 *size],
         [1.0 *size, 0.0 *size],
@@ -292,11 +293,30 @@ const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
         [0.3 *size, 1.0 *size],
         [0.0 *size, 0.0 *size]
     ]
+]; */
+
+
+/// Array of different random meshes for the asteroids
+const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
+    |size| [
+        [-1.0 *size, -0.8 *size],
+        [0.0 *size, -1.0 *size],
+        [1.0 *size, -0.3 *size],
+        [1.1 *size, 0.3 *size],
+        [0.4 *size, 0.5 *size],
+        [1.0 *size, 0.8 *size],
+        [0.5 *size, 1.3 *size],
+        [-0.1 *size, 1.2 *size],
+        [-0.6 *size, 1.0 *size],
+        [-1.3*size, 0.2 *size],
+        [-1.1*size, -0.2 *size],
+        [-0.7 *size, 0.0 *size],
+        [-1.0 *size, -1.0 *size]
+    ]
 ];
 
-
 impl Asteroid {
-    pub fn new(ship_x: f32, ship_y: f32, ctx: &mut Context) -> Asteroid {
+    pub fn new(ship_x: f32, ship_y: f32, sizeOption: Option<AsteroidSize>,ctx: &mut Context) -> Asteroid {
 
 
         let (mut x, mut y);
@@ -317,12 +337,15 @@ impl Asteroid {
         }
 
         let size;
-
-        match (rand::random::<f32>() * 3.0 + 1.0).floor() as u8 {
-            1 => size = AsteroidSize::Small,
-            2 => size = AsteroidSize::Medium,
-            3 => size = AsteroidSize::Big,
-            _ => size = AsteroidSize::Small
+        if let None = sizeOption {
+            size = match (rand::random::<f32>() * 3.0 + 1.0).floor() as u8 {
+                1 => AsteroidSize::Small,
+                2 => AsteroidSize::Medium,
+                3 => AsteroidSize::Big,
+                _ => AsteroidSize::Small
+            }
+        } else {
+            size = sizeOption.unwrap();
         }
 
 /*         let mirrored = match rand::random::<f32>().round() as u8 {
@@ -371,20 +394,58 @@ impl Asteroid {
             AsteroidSize::Small => size = ASTEROID_SMALL
         }
 
-        // I am going to take 2.6 as the raw diameter of an asteroid
-        let radius = 2.6 * size / 2.0;
+        // I am going to take 2.0 as the raw diameter of an asteroid
+        let radius = 2.0 * size / 2.0;
 
-        println!("HIHI");
+/*         println!("hitboxcalc");
         println!("{}", radius);
         println!("{} {}", x, y);
         println!("{} {}", self.x, self.y);
-        println!("{}", ((self.x - x).powf(2.0) + (self.y - y).powf(2.0)).sqrt() );
+        println!("{}", ((self.x - x).powf(2.0) + (self.y - y).powf(2.0)).sqrt() ); */
 
         ((self.x - x).powf(2.0) + (self.y - y).powf(2.0)).sqrt() < radius
 
     }
 
+    /// Split asteroid into 2 of smaller size
+    pub fn split(&self) -> Option<[Asteroid;2]> {
+
+        let size = match self.size {
+            AsteroidSize::Big => AsteroidSize::Medium,
+            AsteroidSize::Medium => AsteroidSize::Small,
+            AsteroidSize::Small => return None
+        };
+
+        let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
+
+        let asteroid1 = Asteroid {
+            speed,
+            rotation_speed,
+            size,
+            ..*self
+        };
+
+        let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
+    
+        let asteroid2 = Asteroid {
+            speed,
+            rotation_speed,
+            size,
+            ..*self
+        };
+
+       Some([asteroid1, asteroid2])
+
+    }
+
 }
+
+/* enum SplitResult {
+    New([Asteroid;2]),
+    None
+} */
 
 impl Draw for Asteroid {
     
@@ -405,12 +466,12 @@ impl Draw for Asteroid {
             graphics::WHITE
         )?;
 
-        // I am going to take 2.6 as the raw diameter of an asteroid
-        let radius = 2.6 * size / 2.0;
+        // I am going to take 2.0 as the raw diameter of an asteroid
+        let radius = 2.0 * size / 2.0;
         //DEBUG
         mesh.circle(
             graphics::DrawMode::stroke(1.0),
-            [radius, radius],
+            [0.0, 0.0],
             radius,
             0.2,
             graphics::WHITE
@@ -431,7 +492,7 @@ impl Draw for Asteroid {
 
         let mut param = DrawParam::new()
             .dest([self.x, self.y])
-            .offset([0.5 * size, 0.5 * -size])
+            //.offset([0.5 * size, 0.5 * -size])
             .rotation(self.rotation);
         
         if self.mirrored {

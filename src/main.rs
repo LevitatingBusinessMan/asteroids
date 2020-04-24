@@ -35,17 +35,34 @@ impl ggez::event::EventHandler for game::GameState {
         // Wrap the ship around the screen
         game::screen_wrap((&mut self.ship.x, &mut self.ship.y), &ctx);
 
-        for asteroid in &mut self.asteroids {
-            // Wrap asteroids around the screen
-            game::screen_wrap((&mut asteroid.x, &mut asteroid.y), &ctx);
+        'laserloop: for laser in &mut self.lasers {
+    
+            laser.update();
+    
+            for asteroid in &mut self.asteroids {
 
-            if asteroid.in_hitbox((self.ship.x, self.ship.y)) {
-                self.death();
-                break;
-            } 
+                asteroid.update();
+    
+                // Wrap asteroids around the screen
+                game::screen_wrap((&mut asteroid.x, &mut asteroid.y), &ctx);
+    
+                if asteroid.in_hitbox((self.ship.x, self.ship.y)) {
+                    
+                    self.death();
+                    break 'laserloop;
 
+                } 
+
+                if asteroid.in_hitbox((laser.x, laser.y)) {
+                    println!("sick");
+                    ()asteroid.split();
+                }
+    
+            }
+        
         }
 
+        self.lasers.retain(|laser| !game::outside_window((laser.x, laser.y), ctx));
 
         if keyboard::is_key_pressed(ctx, keyboard::KeyCode::Space)
         && self.ship.last_fire.elapsed() > Duration::from_secs_f32(1.0 / self.ship.fire_rate) {
@@ -62,15 +79,11 @@ impl ggez::event::EventHandler for game::GameState {
 
         let (ctx_width, ctx_height) = graphics::drawable_size(ctx);
         
-        self.lasers.retain(|laser| !game::outside_window((laser.x, laser.y), ctx));
-
         for laser in &mut self.lasers {
-            laser.update();
             laser.draw(ctx)?;
         }
 
         for asteroid in &mut self.asteroids {
-            asteroid.update();
             asteroid.draw(ctx)?;
         }
        
