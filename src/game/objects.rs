@@ -53,7 +53,7 @@ impl Ship {
             y: (ctx_height- ship_height) / 2.0,
             rotation: (3.0 / 2.0) * std::f32::consts::PI, // Start facing up
             movement_force: 5.0,
-            rotation_speed: 0.08,
+            rotation_speed: 0.1,
             mov: Movement::new(0.3, 10.0),
             fire_rate: 5.0, 
             last_fire: std::time::Instant::now(),
@@ -254,12 +254,14 @@ const ASTEROID_MEDIUM: f32 = 30.0;
 /// Factor to multiple mesh with
 const ASTEROID_SMALL: f32  = 20.0;
 
+#[derive(Clone)]
 pub struct Asteroid {
     pub x: f32,
     pub y: f32,
     rotation: f32,
     rotation_speed: f32,
-    speed: f32,
+    speed_x: f32,
+    speed_y: f32,
     size: AsteroidSize,
     mirrored: bool,
 
@@ -268,8 +270,8 @@ pub struct Asteroid {
 
 }
 
-const ASTEROID_MAX_MOVEMENT_SPEED: f32 = 0.0;
-const ASTEROID_MAX_ROTATION_SPEED: f32 = 0.0;
+const ASTEROID_MAX_MOVEMENT_SPEED: f32 = 5.0;
+const ASTEROID_MAX_ROTATION_SPEED: f32 = 0.1;
 
 /// The width/height of the safezone of the ship.\
 /// Asteroids do not spawn here
@@ -311,7 +313,7 @@ const ASTEROID_MESHES: [fn(f32) -> [[f32;2];13];1] = [
         [-1.3*size, 0.2 *size],
         [-1.1*size, -0.2 *size],
         [-0.7 *size, 0.0 *size],
-        [-1.0 *size, -1.0 *size]
+        [-1.0 *size, -0.8 *size]
     ]
 ];
 
@@ -354,8 +356,9 @@ impl Asteroid {
             _ => true
         }; */
 
-        let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
-        let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
+        let speed_x = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED * 2.0 - ASTEROID_MAX_MOVEMENT_SPEED;
+        let speed_y = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED * 2.0 - ASTEROID_MAX_MOVEMENT_SPEED;
+        let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED * 2.0 - ASTEROID_MAX_ROTATION_SPEED;
         //let rotation = rand::random::<f32>() * (2.0 * std::f32::consts::PI);
 
         let rotation = 0.0;
@@ -368,7 +371,8 @@ impl Asteroid {
             x,
             y,
             size,
-            speed,
+            speed_x,
+            speed_y,
             rotation_speed,
             rotation,
             mirrored,
@@ -377,8 +381,8 @@ impl Asteroid {
     }
 
     pub fn update(&mut self) {
-        self.x += self.rotation.cos() * self.speed;
-        self.y += self.rotation.sin() * self.speed;
+        self.x += self.speed_x;
+        self.y += self.speed_y;
 
         self.rotation += self.rotation_speed;
 
@@ -416,21 +420,27 @@ impl Asteroid {
             AsteroidSize::Small => return None
         };
 
-        let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let speed_x = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let speed_y = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        
         let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
 
         let asteroid1 = Asteroid {
-            speed,
+            speed_x,
+            speed_y,
             rotation_speed,
             size,
             ..*self
         };
 
-        let speed = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let speed_x = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        let speed_y = rand::random::<f32>() * ASTEROID_MAX_MOVEMENT_SPEED;
+        
         let rotation_speed = rand::random::<f32>() * ASTEROID_MAX_ROTATION_SPEED;
-    
+
         let asteroid2 = Asteroid {
-            speed,
+            speed_x,
+            speed_y,
             rotation_speed,
             size,
             ..*self
@@ -467,7 +477,7 @@ impl Draw for Asteroid {
         )?;
 
         // I am going to take 2.0 as the raw diameter of an asteroid
-        let radius = 2.0 * size / 2.0;
+/*         let radius = 2.0 * size / 2.0;
         //DEBUG
         mesh.circle(
             graphics::DrawMode::stroke(1.0),
@@ -475,7 +485,7 @@ impl Draw for Asteroid {
             radius,
             0.2,
             graphics::WHITE
-        );
+        ); */
 
         mesh.build(ctx)
 

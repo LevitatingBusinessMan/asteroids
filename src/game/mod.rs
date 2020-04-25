@@ -16,7 +16,9 @@ Like an enum if they should wrap or destruct */
 pub struct GameState {
     pub ship: Ship,
     pub lasers: Vec<Laser>,
-    pub asteroids: Vec<Asteroid>
+    pub asteroids: Vec<Asteroid>,
+    pub points: u32,
+    pub dead: bool
 }
 
 /// All structs with this trait can draw themselves.
@@ -42,7 +44,9 @@ impl GameState {
         GameState {
             ship: Ship::new(ctx),
             lasers: Vec::new(),
-            asteroids: Vec::new()
+            asteroids: Vec::new(),
+            points: 0,
+            dead: false
         }
 
     }
@@ -53,8 +57,12 @@ impl GameState {
         }
     }
 
-    pub fn death(&mut self) {
-        println!("DEAD");
+    pub fn death(&mut self, ctx: &Context) {
+        self.ship = objects::Ship::new(ctx);
+        self.lasers = Vec::new();
+        self.asteroids = Vec::new();
+        self.points = 0;
+        self.dead = true;
     }
 
 }
