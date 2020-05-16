@@ -1,4 +1,4 @@
-This is a WIP asteroids clone. I made it to learn Rust (which btw if fucking great).
+This is a WIP asteroids clone. I made it to learn Rust (which btw is fucking great).
 The code sucks, and is a pain to work with.
 I kind of just started writing without ever having written a real game before.
 
